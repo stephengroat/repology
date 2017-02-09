@@ -424,7 +424,7 @@ def metapackage_information(name):
     packages = get_db().GetMetapackage(name)
     packages = sorted(packages, key=lambda package: package.repo + package.name + package.version)
 
-    information = {}
+    information = {'links':set()}
 
     def append_info(infokey, infoval, package):
         if infokey not in information:
@@ -450,6 +450,9 @@ def metapackage_information(name):
             append_info('homepages', package.homepage, package)
         for download in package.downloads:
             append_info('downloads', download, package)
+
+        for link in repometadata[package.repo]['links']:
+            information['links'].add((link['desc'], pkg_format(link['url'], package)))
 
     versions = PackagesetAggregateByVersions(packages)
 

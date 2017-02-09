@@ -77,6 +77,15 @@
 		</ul>
 		{% endif %}
 
+		{% if information.links %}
+		<h2>Links</h2>
+		<ul>
+		{% for link in information.links|sort(case_sensitive=True)  %}
+			<li><a href="{{ link[1] }}">{{ link[0] }}</a></li>
+		{% endfor %}
+		</ul>
+		{% endif %}
+
 		{% if information.downloads %}
 		<h2>Downloads</h2>
 		<ul>
