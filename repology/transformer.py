@@ -57,6 +57,28 @@ class PackageTransformer:
 
             rule['matches'] = 0
 
+        # arrange rules in packs for optimization; packs of rules with
+        # strict name conditions may be skipped quickly after single set lookup
+        self.rulepacks = []
+
+        names = set()
+        pack = []
+        for rule in self.rules:
+            if 'name' in rule:
+                for name in rule['name']:
+                    names.add(name)
+                    pack.append(rule)
+            else:
+                if names:
+                    self.rulepacks.append((lambda name: name in names, pack))
+                names = set()
+                pack = []
+
+                self.rulepacks.append((lambda name: True, [rule]))
+
+        if names:
+            self.rulepacks.append((lambda name: name in names, pack))
+
     def MatchRule(self, rule, pkgname, pkgversion, pkgcategory, pkgfamily):
         # match family
         if 'family' in rule:
@@ -135,28 +157,33 @@ class PackageTransformer:
         transformed_name = package.name
 
         # apply first matching rule
-        for rule in self.rules:
-            if not self.MatchRule(rule, transformed_name, package.version, package.category, package.family):
+        for precondition, rulepack in self.rulepacks:
+            if not precondition(transformed_name):
                 continue
 
-            rule['matches'] += 1
+            for rule in rulepack:
+                if not self.MatchRule(rule, transformed_name, package.version, package.category, package.family):
+                    continue
 
-            flags, transformed_name = self.ApplyRule(rule, transformed_name, package.version)
+                rule['matches'] += 1
 
-            if flags & MatchResult.ignorepackage:
-                package.ignore = True
+                flags, transformed_name = self.ApplyRule(rule, transformed_name, package.version)
 
-            if flags & MatchResult.ignoreversion:
-                package.ignoreversion = True
+                if flags & MatchResult.ignorepackage:
+                    package.ignore = True
 
-            if flags & MatchResult.unignorepackage:
-                package.ignore = False
+                if flags & MatchResult.ignoreversion:
+                    package.ignoreversion = True
 
-            if flags & MatchResult.unignoreversion:
-                package.ignoreversion = False
+                if flags & MatchResult.unignorepackage:
+                    package.ignore = False
 
-            if flags & MatchResult.lastrule:
-                break
+                if flags & MatchResult.unignoreversion:
+                    package.ignoreversion = False
+
+                if flags & MatchResult.lastrule:
+                    package.effname = transformed_name
+                    return
 
         package.effname = transformed_name
 

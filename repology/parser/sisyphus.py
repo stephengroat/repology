@@ -20,6 +20,7 @@ import subprocess
 
 from repology.package import Package
 from repology.util import GetMaintainers
+from repology.parser.helpers.rpm import rpmread
 
 
 class SrcListClassicParser():
@@ -30,18 +31,15 @@ class SrcListClassicParser():
     def Parse(self, path):
         result = []
 
-        with subprocess.Popen(["helpers/rpmcat/rpmcat", path], stdout=subprocess.PIPE, universal_newlines=True) as proc:
-            for line in proc.stdout:
-                fields = line.split('|')
+        for package in rpmread(path):
+            pkg = Package()
 
-                pkg = Package()
+            pkg.name = package('name')
+            pkg.version = package('version')
+            pkg.maintainers = GetMaintainers(package('maintainers'))  # XXX: may have multiple maintainers
+            pkg.category = package('category')
+            pkg.comment = package('comment')
 
-                pkg.name = fields[0]
-                pkg.version = fields[1]
-                pkg.maintainers = GetMaintainers(fields[2])  # XXX: may have multiple maintainers
-                pkg.category = fields[3]
-                pkg.comment = fields[4]
-
-                result.append(pkg)
+            result.append(pkg)
 
         return result
