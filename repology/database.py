@@ -16,8 +16,10 @@
 # along with repology.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import json
 
 import psycopg2
+from psycopg2.extras import Json
 
 from repology.package import Package
 
@@ -427,6 +429,32 @@ class Database:
                 num_metapackages_newest = 0,
                 num_metapackages_outdated = 0
         """)
+
+    def AddRawPackages(self, repo, effname, packages):
+        self.cursor.execute(
+            """
+            INSERT INTO raw_packages(
+                repo,
+                effname,
+                packages,
+                updated
+            ) VALUES (
+                %s,
+                %s,
+                %s,
+                now()
+            )
+            ON CONFLICT (repo, effname)
+            DO UPDATE SET
+                packages = EXCLUDED.packages,
+                updated = now()
+            """,
+            (
+                repo,
+                effname,
+                Json(list(map(lambda x: x.__dict__, packages)))
+            )
+        )
 
     def AddPackages(self, packages):
         self.cursor.executemany(

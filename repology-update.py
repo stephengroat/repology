@@ -31,7 +31,24 @@ from repology.repoman import RepositoryManager
 from repology.transformer import PackageTransformer
 
 
-def ProcessRepositories(options, logger, repoman, transformer):
+def ProcessRawdb(packages, options, logger, database):
+    logger.Log('pushing packages to database')
+
+    grouped = {}
+    for package in packages:
+        grouped.setdefault(package.effname, []).append(package)
+
+    for group in grouped.values():
+        repo = group[0].repo
+        effname = group[0].effname
+
+        for package in group:
+            assert(package.repo == repo and package.effname == effname)
+
+        database.AddRawPackages(repo, effname, group)
+
+
+def ProcessRepositories(options, logger, repoman, transformer, database):
     repositories_updated = []
     repositories_not_updated = []
 
@@ -41,10 +58,18 @@ def ProcessRepositories(options, logger, repoman, transformer):
         try:
             if options.fetch:
                 repoman.Fetch(reponame, update=options.update, logger=repo_logger.GetIndented())
+
+            packages = None
             if options.parse:
-                repoman.ParseAndSerialize(reponame, transformer=transformer, logger=repo_logger.GetIndented())
+                packages = repoman.ParseAndSerialize(reponame, transformer=transformer, logger=repo_logger.GetIndented())
             elif options.reprocess:
-                repoman.Reprocess(reponame, transformer=transformer, logger=repo_logger.GetIndented())
+                packages = repoman.Reprocess(reponame, transformer=transformer, logger=repo_logger.GetIndented())
+
+            if options.rawdb:
+                if not packages:
+                    packages = repoman.Deserialize(reponame, logger=repo_logger.GetIndented())
+
+                ProcessRawdb(packages, options, logger=repo_logger.GetIndented(), database=database)
         except KeyboardInterrupt:
             logger.Log('interrupted')
             return 1
@@ -66,55 +91,45 @@ def ProcessRepositories(options, logger, repoman, transformer):
     return repositories_updated, repositories_not_updated
 
 
-def ProcessDatabase(options, logger, repoman, repositories_updated):
-    logger.Log('connecting to database')
+def ProcessDatabase(options, logger, repoman, repositories_updated, database):
+    db_logger.Log('clearing the database')
+    database.Clear()
 
-    db_logger = logger.GetIndented()
+    package_queue = []
+    num_pushed = 0
 
-    database = Database(options.dsn, readonly=False)
-    if options.initdb:
-        db_logger.Log('(re)initializing database schema')
-        database.CreateSchema()
+    def PackageProcessor(packageset):
+        nonlocal package_queue, num_pushed
+        FillPackagesetVersions(packageset)
+        package_queue.extend(packageset)
 
-    if options.database:
-        db_logger.Log('clearing the database')
-        database.Clear()
+        if len(package_queue) >= 1000:
+            database.AddPackages(package_queue)
+            num_pushed += len(package_queue)
+            package_queue = []
+            db_logger.Log('  pushed {} packages'.format(num_pushed))
 
-        package_queue = []
-        num_pushed = 0
+    db_logger.Log('pushing packages to database')
+    repoman.StreamDeserializeMulti(processor=PackageProcessor, reponames=options.reponames)
 
-        def PackageProcessor(packageset):
-            nonlocal package_queue, num_pushed
-            FillPackagesetVersions(packageset)
-            package_queue.extend(packageset)
+    # process what's left in the queue
+    database.AddPackages(package_queue)
 
-            if len(package_queue) >= 1000:
-                database.AddPackages(package_queue)
-                num_pushed += len(package_queue)
-                package_queue = []
-                db_logger.Log('  pushed {} packages'.format(num_pushed))
+    if options.fetch and options.update and options.parse:
+        db_logger.Log('recording repo updates')
+        database.MarkRepositoriesUpdated(repositories_updated)
+    else:
+        db_logger.Log('not recording repo updates, need --fetch --update --parse')
 
-        db_logger.Log('pushing packages to database')
-        repoman.StreamDeserializeMulti(processor=PackageProcessor, reponames=options.reponames)
+    db_logger.Log('updating views')
+    database.UpdateViews()
+    database.ExtractLinks()
 
-        # process what's left in the queue
-        database.AddPackages(package_queue)
+    db_logger.Log('updating history')
+    database.SnapshotRepositoriesHistory()
 
-        if options.fetch and options.update and options.parse:
-            db_logger.Log('recording repo updates')
-            database.MarkRepositoriesUpdated(repositories_updated)
-        else:
-            db_logger.Log('not recording repo updates, need --fetch --update --parse')
-
-        db_logger.Log('updating views')
-        database.UpdateViews()
-        database.ExtractLinks()
-
-        db_logger.Log('updating history')
-        database.SnapshotRepositoriesHistory()
-
-        db_logger.Log('committing changes')
-        database.Commit()
+    db_logger.Log('committing changes')
+    database.Commit()
 
     logger.Log('database processing complete')
 
@@ -146,6 +161,7 @@ def Main():
     actions_grp.add_argument('-P', '--reprocess', action='store_true', help='reprocess repository data')
     actions_grp.add_argument('-i', '--initdb', action='store_true', help='(re)initialize database schema')
     actions_grp.add_argument('-d', '--database', action='store_true', help='store in the database')
+    actions_grp.add_argument('-a', '--rawdb', action='store_true', help='store raw package data in the database')
 
     actions_grp.add_argument('-r', '--show-unmatched-rules', action='store_true', help='show unmatched rules when parsing')
 
@@ -159,18 +175,31 @@ def Main():
     repoman = RepositoryManager(options.repos_path, options.statedir)
     transformer = PackageTransformer(options.rules_path)
 
+    database = None
+    if options.database or options.initdb or options.rawdb:
+        logger.Log('connecting to database')
+
+        database = Database(options.dsn, readonly=False)
+        if options.initdb:
+            logger.Log('(re)initializing database schema')
+            database.CreateSchema()
+
     repositories_updated = []
     repositories_not_updated = []
 
     start = timer()
-    if options.fetch or options.parse or options.reprocess:
-        repositories_updated, repositories_not_updated = ProcessRepositories(options=options, logger=logger, repoman=repoman, transformer=transformer)
+    if options.fetch or options.parse or options.reprocess or options.rawdb:
+        repositories_updated, repositories_not_updated = ProcessRepositories(options=options, logger=logger, repoman=repoman, transformer=transformer, database=database)
 
-    if options.initdb or options.database:
-        ProcessDatabase(options=options, logger=logger, repoman=repoman, repositories_updated=repositories_updated)
+    if options.database:
+        ProcessDatabase(options=options, logger=logger, repoman=repoman, repositories_updated=repositories_updated, database=database)
 
     if (options.parse or options.reprocess) and (options.show_unmatched_rules):
         ShowUnmatchedRules(options=options, logger=logger, transformer=transformer)
+
+    if database:
+        logger.Log('committing changes')
+        database.Commit()
 
     logger.Log('total time taken: {:.2f} seconds'.format((timer() - start)))
 
