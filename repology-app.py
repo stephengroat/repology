@@ -482,7 +482,6 @@ def metapackage_packages(name):
 @app.route('/metapackage/<name>/information')
 def metapackage_information(name):
     packages = get_db().GetMetapackage(name)
-    packages = sorted(packages, key=lambda package: package.repo + package.name + package.version)
 
     information = {}
 
@@ -510,6 +509,12 @@ def metapackage_information(name):
             append_info('homepages', package.homepage, package)
         for download in package.downloads:
             append_info('downloads', download, package)
+
+    # preserve repos order
+    information['repos'] = [
+        (reponame, information['repos'][reponame])
+        for reponame in reponames if reponame in information['repos']
+    ]
 
     versions = PackagesetAggregateByVersions(packages)
 
@@ -570,18 +575,18 @@ def metapackage_report(name):
 def badge_vertical_allrepos(name):
     summaries = PackagesetToSummaries(get_db().GetMetapackage(name))
 
-    repostates = []
-    for reponame, summary in summaries.items():
-        repostates.append({
+    repostates = [
+        {
             'name': repometadata[reponame]['desc'],
-            'version': summary['version'],
-            'versionclass': summary['versionclass']
-        })
+            'version': summaries[reponame]['version'],
+            'versionclass': summaries[reponame]['versionclass'],
+        } for reponame in reponames if reponame in summaries
+    ]
 
     return (
         flask.render_template(
             'badge-vertical.svg',
-            repositories=sorted(repostates, key=lambda repo: repo['name']),
+            repositories=repostates,
             name=name
         ),
         {'Content-type': 'image/svg+xml'}
@@ -641,7 +646,9 @@ def opensearch_maintainer():
 @app.route('/statistics')
 @app.route('/statistics/<sorting>')
 def statistics(sorting=None):
-    repostats = filter(lambda r: r['name'] in reponames, get_db().GetRepositories())
+    # repostats should be sorted by reponames as returned from repoman
+    repostats = {repostat['name']: repostat for repostat in get_db().GetRepositories()}
+    repostats = [repostats[reponame] for reponame in reponames if reponame in repostats]
     showmedals = True
 
     if sorting == 'newest':
@@ -656,7 +663,6 @@ def statistics(sorting=None):
         repostats = sorted(repostats, key=lambda s: s['num_metapackages'], reverse=True)
     else:
         sorting = 'name'
-        repostats = sorted(repostats, key=lambda s: s['name'])
         showmedals = False
 
     return flask.render_template(
