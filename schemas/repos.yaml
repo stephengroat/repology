@@ -8,6 +8,9 @@ sequence:
       "name":
         type: str
         required: yes
+      "sortname":
+        type: str
+        required: no
       "desc":
         type: str
         required: yes
