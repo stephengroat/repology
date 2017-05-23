@@ -114,6 +114,7 @@
   tags: [ all, production, debian, have_testdata ]
 
 - name: debian_experimental
+  sortname: debian_z
   desc: Debian Experimental
   family: debuntu
   sources:
