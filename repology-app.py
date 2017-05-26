@@ -510,11 +510,12 @@ def metapackage_information(name):
         for download in package.downloads:
             append_info('downloads', download, package)
 
-    # preserve repos order
-    information['repos'] = [
-        (reponame, information['repos'][reponame])
-        for reponame in reponames if reponame in information['repos']
-    ]
+    if 'repos' in information:
+        # preserve repos order
+        information['repos'] = [
+            (reponame, information['repos'][reponame])
+            for reponame in reponames if reponame in information['repos']
+        ]
 
     versions = PackagesetAggregateByVersions(packages)
 
