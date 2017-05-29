@@ -1,0 +1,21 @@
+###########################################################################
+# Fink
+###########################################################################
+- name: fink
+  type: repository
+  desc: Fink
+  family: fink
+  sources:
+    - name: fink
+      fetcher: File
+      parser: FinkHTML
+      url: http://pdb.finkproject.org/pdb/browse.php?nochildren=on
+  repolinks:
+    - desc: Fink project
+      url: http://www.finkproject.org/index.php
+    - desc: Fink packages
+      url: http://pdb.finkproject.org/pdb/index.php?phpLang=en
+  packagelinks:
+    - desc: Package page
+      url: 'http://pdb.finkproject.org/pdb/package.php/{name}'
+  tags: [ all, production ]
