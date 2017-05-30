@@ -1,3 +1,6 @@
 - { family: macports, namepat: "(.*)-devel", setname: "$1", ignorever: true }
 
 # XXX: same for freebsd?
+
+- { family: fink, namepat: "(.*)-shlibs", setname: "$1" }
+- { family: fink, namepat: "(.*)-(mac|x11)", setname: "$1" }

@@ -59,7 +59,7 @@
 - { name: [atlas-with-lapack,atlas-lapack], setname: atlas                }
 - { namepat: "ats2(.*)",               setname: "ats$1"                   }
 - { name: apcupsd-x11,                 setname: apcupsd                   }
-- { name: [aqbanking5,aqbanking5-gtk,aqbanking5-svn], setname: aqbanking }
+- { name: [aqbanking5,aqbanking5-gtk,aqbanking5-svn,aqbanking33], setname: aqbanking }
 - { name: argus-sasl,                  setname: argus,                    family: [ freebsd ]  }
 - { name: [audacious-gtk3,audacious-core,audacious-qt5,audacious2,audacious-itself], setname: audacious }
 - { name: audacious2-plugins,          setname: audacious-plugins         }
@@ -93,6 +93,7 @@
 - { name: [boost-all,boost-libs,boost-headers,boost-python-libs,boost-python,boost-mpi,boost-bcp], setname: boost }
 - { namepat: "boost-mpi-source[0-9-.]+", setname: boost                   }
 - { namepat: "boost[0-9_.]+",          setname: boost                     }
+- { namepat: "boost[0-9_.]+(?:-.*python.*)", setname: boost               } # fink
 - { namepat: "botan[0-9.]+",           setname: botan                     }
 - { namepat: "libbotan[0-9.]*",        setname: botan                     }
 - { name: bouncycastle15,              setname: bouncycastle              }

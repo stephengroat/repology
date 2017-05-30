@@ -12,6 +12,7 @@
 - { namepat: "python[0-9]\\.[0-9]-(.*)", setname: "python:$1", family: [ nix ] }
 - { namepat: "py[23]?-(.*)",           setname: "python:$1", family: [ alpine ] }
 - { namepat: "py[0-9]*-(.*)",          setname: "python:$1", family: [ macports ] }
+- { namepat: "(.*)-py[0-9]+",          setname: "python:$1", family: [ fink ] }
 - { category: dev-python,              setname: "python:$0", family: [ gentoo ] }
 
 # turn python modules into such

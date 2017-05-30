@@ -4,7 +4,7 @@
 - {                                    setname: "haskell:$0", family: [ hackage ] }
 - { namepat: "haskell-(.*)",           setname: "haskell:$1", family: [ debuntu, arch, slackbuilds, gobolinux ] }
 - { namepat: "hs-(.*)",                setname: "haskell:$1", family: [ freebsd, pkgsrc, openbsd, macports ] }
-- { namepat: "ghc-(.*)",               setname: "haskell:$1", family: [ opensuse, fedora, guix, rosa ] }
+- { namepat: "ghc-(.*)",               setname: "haskell:$1", family: [ opensuse, fedora, guix, rosa, fink ] }
 - { category: dev-haskell,             setname: "haskell:$0", family: [ gentoo ] }
 - { namepat: "ghc[0-9.]+-(.*)",        setname: "haskell:$1", family: [ sisyphus ] }
 

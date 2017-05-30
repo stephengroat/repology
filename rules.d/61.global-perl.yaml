@@ -10,6 +10,7 @@
 - { namepat: "perl-(.*)",              setname: "perl:$1", family: [ arch, fedora, centos, mageia, opensuse, sisyphus, slackbuilds, gobolinux, guix, rosa, nix, alpine, pclinuxos ] }
 - { category: dev-perl,                setname: "perl:$0", family: [ gentoo ] }
 - { category: perl-core,               setname: "perl:$0", family: [ gentoo ] }
+- { namepat: "(.*)-pm[0-9]*",          setname: "perl:$1", family: [ fink ] }
   # Gentoo and Mageia shamelessly mangle perl module versions, ignore
 - { namepat: "perl:(.*)",              family: [ gentoo, mageia, rosa, macports ], ignorever: true }
 
