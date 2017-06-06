@@ -24,7 +24,7 @@ from repology.transformer import PackageTransformer
 
 
 class TestPackageTransformer(unittest.TestCase):
-    def check_transformer(self, rulestext, *packages):
+    def check_transformer(self, rulestext, *packages, context=None):
         transformer = PackageTransformer(rulestext=rulestext)
 
         for packagedict in packages:
@@ -37,7 +37,7 @@ class TestPackageTransformer(unittest.TestCase):
                     create_params[field] = value
 
             package = Package(**create_params)
-            transformer.Process(package)
+            transformer.Process(package, context)
 
             for field, value in expected_params.items():
                 self.assertEqual(package.__dict__[field], value)
@@ -93,6 +93,24 @@ class TestPackageTransformer(unittest.TestCase):
             '[ { last: true }, { setname: "bar" } ]',
             {'name': 'foo', 'version': '1.0', 'expect_effname': 'foo'}
         )
+
+    def test_warning(self):
+        context = {}
+        self.check_transformer(
+            '[ { warning: foo } ]',
+            {'name': 'foo', 'version': '1.0'},
+            context=context
+        )
+        self.assertEqual(context, {'warning': 'foo'})
+
+    def test_nowarning(self):
+        context = {}
+        self.check_transformer(
+            '[ { warning: foo }, { nowarning: true } ]',
+            {'name': 'foo', 'version': '1.0'},
+            context=context
+        )
+        self.assertEqual(context, {})
 
     def test_match_name(self):
         self.check_transformer(

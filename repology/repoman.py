@@ -220,8 +220,10 @@ class RepositoryManager:
             package.family = repository['family']
             if 'shadow' in repository and repository['shadow']:
                 package.shadow = True
+
+            processcontext = {}
             if transformer:
-                transformer.Process(package)
+                transformer.Process(package, processcontext)
 
             try:
                 package.CheckSanity(transformed=transformer is not None)
@@ -230,6 +232,9 @@ class RepositoryManager:
                 raise
             except PackageSanityCheckProblem as err:
                 sanitylogger.Log('sanity warning: {}'.format(err))
+
+            if 'warning' in processcontext:
+                sanitylogger.Log('rule warning: {}'.format(processcontext['warning']))
 
             package.Normalize()
 

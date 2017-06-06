@@ -77,7 +77,7 @@ class PackageTransformer:
             else:
                 self.slowrules.append(rule)
 
-    def ApplyRule(self, rule, package):
+    def ApplyRule(self, rule, package, context):
         # match family
         if 'family' in rule:
             if package.family not in rule['family']:
@@ -155,7 +155,12 @@ class PackageTransformer:
             package.effname = package.effname.lower()
 
         if 'warning' in rule:
-            print('Rule warning for {} in {}: {}'.format(package.name, package.repo, rule['warning']), file=sys.stderr)
+            if context is not None:
+                context['warning'] = rule['warning']
+
+        if 'nowarning' in rule:
+            if context and 'warning' in context:
+                del context['warning']
 
         return result
 
@@ -166,7 +171,7 @@ class PackageTransformer:
 
         return None
 
-    def Process(self, package):
+    def Process(self, package, context=None):
         # start with package.name as is, if it was not already set
         if package.effname is None:
             package.effname = package.name
@@ -182,12 +187,12 @@ class PackageTransformer:
 
             # apply fast rules
             while nextfastrule and nextfastrule['number'] < slowrule['number']:
-                if self.ApplyRule(nextfastrule, package) == RuleApplyResult.last:
+                if self.ApplyRule(nextfastrule, package, context) == RuleApplyResult.last:
                     return
                 nextfastrule = self.GetFastRule(package, nextfastrule['number'])
 
             # apply slow rule
-            result = self.ApplyRule(slowrule, package)
+            result = self.ApplyRule(slowrule, package, context)
             if result == RuleApplyResult.matched:
                 nextfastrule = self.GetFastRule(package, slowrule['number'])
             elif result == RuleApplyResult.last:
@@ -195,7 +200,7 @@ class PackageTransformer:
 
         # apply remaining fast rules
         while nextfastrule:
-            if self.ApplyRule(nextfastrule, package) == RuleApplyResult.last:
+            if self.ApplyRule(nextfastrule, package, context) == RuleApplyResult.last:
                 return
             nextfastrule = self.GetFastRule(package, nextfastrule['number'])
 
