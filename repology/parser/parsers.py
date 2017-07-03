@@ -27,6 +27,7 @@ from .debian import DebianSourcesParser
 from .distrowatch import DistrowatchPackagesParser
 from .dports import DPortsIndexParser
 from .fdroid import FDroidParser
+from .fourm import FourMAddonsTxtParser
 from .freebsd import FreeBSDIndexParser
 from .freshcode import FreshcodeParser
 from .gentoo import GentooGitParser

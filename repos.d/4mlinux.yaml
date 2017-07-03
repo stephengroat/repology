@@ -1,0 +1,30 @@
+###########################################################################
+# 4M Linux
+###########################################################################
+- name: 4m_21_0
+  type: repository
+  desc: 4MLinux 21.0
+  family: 4mlinux
+  sources:
+    - name: addons.txt
+      fetcher: File
+      parser: FourMAddonsTxt
+      url: http://4mlinux.com/addons-21.0.txt
+  repolinks:
+    - desc: SlackBuilds.org
+      url: https://slackbuilds.org/
+  tags: [ all, production, 4m ]
+
+- name: 4m_22_0
+  type: repository
+  desc: 4MLinux 22.0
+  family: 4mlinux
+  sources:
+    - name: addons.txt
+      fetcher: File
+      parser: FourMAddonsTxt
+      url: http://4mlinux.com/addons-22.0.txt
+  repolinks:
+    - desc: SlackBuilds.org
+      url: https://slackbuilds.org/
+  tags: [ all, production, 4m ]
