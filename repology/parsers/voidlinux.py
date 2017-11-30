@@ -1,4 +1,5 @@
-# Copyright (C) 2016-2017 Dmitry Marakasov <amdmi3@amdmi3.ru>
+# Copyright (C) 2017 Dmitry Marakasov <amdmi3@amdmi3.ru>
+# Copyright (C) 2017 Felix Van der Jeugt <felix.vanderjeugt@gmail.com>
 #
 # This file is part of repology
 #
