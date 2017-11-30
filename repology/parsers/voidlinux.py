@@ -18,30 +18,51 @@
 
 import os
 import plistlib
+import sys
 
 from repology.package import Package
+from repology.util import GetMaintainers
 
 
-def parse_maintainer(maintainerstr):
-    if not maintainerstr:
-        return []
-    return [maintainerstr.split()[-1].lstrip('<').rstrip('>')]
+def SanitizeVersion(version):
+    origversion = version
+
+    version = version.split('_', 1)[0]
+
+    if version != origversion:
+        return version, origversion
+    else:
+        return version, None
 
 
 class VoidLinuxParser():
-
     def __init__(self):
         pass
 
     def Parse(self, path):
         index_path = os.path.join(path, 'index.plist')
-        plist_index = plistlib.load(open(index_path, 'rb'),
-                                    fmt=plistlib.FMT_XML)
+        plist_index = plistlib.load(open(index_path, 'rb'), fmt=plistlib.FMT_XML)
 
-        return [Package(name=pkgname,
-                        version=props['pkgver'].split('-')[-1].replace('_', '-'),
-                        maintainers=parse_maintainer(props.get('maintainer')),
-                        comment=props['short_desc'],
-                        homepage=props['homepage'],
-                        licenses=[l.strip() for l in props['license'].split(',')])
-                for pkgname, props in plist_index.items()]
+        packages = []
+        for pkgname, props in plist_index.items():
+            pkg = Package()
+
+            if 'source-revisions' in props:
+                pkg.effname = props['source-revisions'].split(':', 1)[0]
+            else:
+                print('WARNING: No source-revisions field for "{}"'.format(pkgname), file=sys.stderr)
+
+            if not props['pkgver'].startswith(pkgname + '-'):
+                print('WARNING: Bad pkgver for "{}"'.format(pkgname), file=sys.stderr)
+                continue
+
+            pkg.name = pkgname
+            pkg.version, pkg.origversion = SanitizeVersion(props['pkgver'][len(pkgname) + 1:])
+            pkg.maintainers = GetMaintainers(props.get('maintainer', ''))
+            pkg.comment = props['short_desc']
+            pkg.homepage = props['homepage']
+            pkg.licenses = [l.strip() for l in props['license'].split(',')]
+
+            packages.append(pkg)
+
+        return packages
